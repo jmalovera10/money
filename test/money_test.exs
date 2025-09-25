@@ -3,7 +3,7 @@ defmodule MoneyTest do
   doctest Money
 
   require Money.Currency
-  import Money.Currency, only: [usd: 1, eur: 1, clf: 1, jpy: 1, omr: 1, xau: 1, zar: 1]
+  import Money.Currency, only: [usd: 1, eur: 1, clf: 1, jpy: 1, omr: 1, xau: 1, zar: 1, ars: 1, pen: 1, brl: 1]
 
   test "new/1 with default currency set" do
     try do
@@ -26,6 +26,7 @@ defmodule MoneyTest do
     end
   end
 
+  @tag decimal_1_2: true
   test "parse/3" do
     assert Money.parse("$1,000.00", :USD) == {:ok, usd(100_000)}
     assert Money.parse("$ 1,000.00", :USD) == {:ok, usd(100_000)}
@@ -49,9 +50,19 @@ defmodule MoneyTest do
     assert Money.parse(",25", :EUR, separator: ".", delimiter: ",") == {:ok, eur(25)}
     assert Money.parse("-,25", :EUR, separator: ".", delimiter: ",") == {:ok, eur(-25)}
 
+    assert Money.parse("0E+1", :USD) == {:ok, usd(0)}
+    assert Money.parse("1000.0e1", :USD) == {:ok, usd(1_000_000)}
+    assert Money.parse("1000.0E1", :USD) == {:ok, usd(1_000_000)}
+    assert Money.parse("1000.0e+1", :USD) == {:ok, usd(1_000_000)}
+    assert Money.parse("1000.0E+1", :USD) == {:ok, usd(1_000_000)}
+    assert Money.parse("1000.0e-1", :USD) == {:ok, usd(10000)}
+    assert Money.parse("1000.0E-1", :USD) == {:ok, usd(10000)}
+    assert Money.parse("0.5e-1", :USD) == {:ok, usd(5)}
+
     assert Money.parse("1000.0", :WRONG) == :error
   end
 
+  @tag decimal_1_2: true
   test "parse/1 big money" do
     assert Money.parse("$1,000,000,000,000,000.01", :USD) ==
              {:ok, usd(1_000_000_000_000_000_01)}
@@ -63,6 +74,7 @@ defmodule MoneyTest do
              {:ok, usd(1_000_000_000_000_000_000_000_01)}
   end
 
+  @tag decimal_1_2: true
   test "parse/3 with options" do
     assert Money.parse("€1.000,00", :EUR, separator: ".", delimiter: ",") == {:ok, eur(100_000)}
     assert Money.parse("€ 1.000,00", :EUR, separator: ".", delimiter: ",") == {:ok, eur(100_000)}
@@ -71,6 +83,7 @@ defmodule MoneyTest do
     assert Money.parse("1000,0", :EUR, separator: ".", delimiter: ",") == {:ok, eur(100_000)}
   end
 
+  @tag decimal_1_2: true
   test "parse/2 with default currency set" do
     try do
       Application.put_env(:money, :default_currency, :GBP)
@@ -80,6 +93,7 @@ defmodule MoneyTest do
     end
   end
 
+  @tag decimal_1_2: true
   test "parse/2 with different exponents" do
     assert Money.parse(1_000.00, :EUR) == {:ok, eur(100_000)}
     assert Money.parse(1_000.00, :JPY) == {:ok, jpy(1000)}
@@ -243,6 +257,98 @@ defmodule MoneyTest do
            ]
   end
 
+  test "test div" do
+    # Basic division
+    assert Money.div(Money.new(100, :USD), 2) == usd(50)
+    assert Money.div(Money.new(200, :USD), 4) == usd(50)
+
+    # Half-up rounding with positive numbers
+    # 75.5 rounds up to 76
+    assert Money.div(Money.new(151, :USD), 2) == usd(76)
+    # 74.5 rounds up to 75
+    assert Money.div(Money.new(149, :USD), 2) == usd(75)
+    # 33.33... rounds to 33
+    assert Money.div(Money.new(100, :USD), 3) == usd(33)
+    # 33.66... rounds to 34
+    assert Money.div(Money.new(101, :USD), 3) == usd(34)
+    # 34.0 stays 34
+    assert Money.div(Money.new(102, :USD), 3) == usd(34)
+    # 34.33... rounds to 34
+    assert Money.div(Money.new(103, :USD), 3) == usd(34)
+    # 34.66... rounds to 35
+    assert Money.div(Money.new(104, :USD), 3) == usd(35)
+    # 35.0 stays 35
+    assert Money.div(Money.new(105, :USD), 3) == usd(35)
+
+    # Half-up rounding with negative numbers
+    # -75.5 rounds to -76
+    assert Money.div(Money.new(-151, :USD), 2) == usd(-76)
+    # -74.5 rounds to -75
+    assert Money.div(Money.new(-149, :USD), 2) == usd(-75)
+    # -33.33... rounds to -33
+    assert Money.div(Money.new(-100, :USD), 3) == usd(-33)
+    # -33.66... rounds to -34
+    assert Money.div(Money.new(-101, :USD), 3) == usd(-34)
+
+    # Division by negative numbers
+    assert Money.div(Money.new(151, :USD), -2) == usd(-76)
+    assert Money.div(Money.new(-151, :USD), -2) == usd(76)
+
+    # Division with float divisor
+    assert Money.div(Money.new(100, :USD), 2.0) == usd(50)
+    # 66.66... rounds to 67
+    assert Money.div(Money.new(100, :USD), 1.5) == usd(67)
+    # 40.0 stays 40
+    assert Money.div(Money.new(100, :USD), 2.5) == usd(40)
+
+    # Edge cases
+    # 0.5 rounds up to 1
+    assert Money.div(Money.new(1, :USD), 2) == usd(1)
+    # -0.5 rounds to -1
+    assert Money.div(Money.new(-1, :USD), 2) == usd(-1)
+    # 0 divided by anything is 0
+    assert Money.div(Money.new(0, :USD), 5) == usd(0)
+
+    # Division with Decimal divisor
+    assert Money.div(Money.new(100, :USD), Decimal.new("2")) == usd(50)
+    assert Money.div(Money.new(100, :USD), Decimal.new("2.0")) == usd(50)
+    # 66.66... rounds to 67 with half-up
+    assert Money.div(Money.new(100, :USD), Decimal.new("1.5")) == usd(67)
+    # 40.0 stays 40
+    assert Money.div(Money.new(100, :USD), Decimal.new("2.5")) == usd(40)
+    # Half-up rounding: 75.5 rounds up to 76
+    assert Money.div(Money.new(151, :USD), Decimal.new("2")) == usd(76)
+    # 33.33... rounds to 33
+    assert Money.div(Money.new(100, :USD), Decimal.new("3")) == usd(33)
+    # Negative numbers with Decimal
+    assert Money.div(Money.new(-151, :USD), Decimal.new("2")) == usd(-76)
+    assert Money.div(Money.new(151, :USD), Decimal.new("-2")) == usd(-76)
+
+    # Division by zero should raise ArithmeticError
+    assert_raise ArithmeticError, "division by zero", fn ->
+      Money.div(Money.new(100, :USD), 0)
+    end
+
+    assert_raise ArithmeticError, "division by zero", fn ->
+      Money.div(Money.new(100, :USD), 0.0)
+    end
+
+    assert_raise ArithmeticError, "division by zero", fn ->
+      Money.div(Money.new(100, :USD), Decimal.new("0"))
+    end
+
+    assert_raise ArithmeticError, "division by zero", fn ->
+      Money.div(Money.new(100, :USD), Decimal.new("0.0"))
+    end
+  end
+
+  test "test divide error cases" do
+    # Division by zero should raise ArithmeticError
+    assert_raise ArithmeticError, "division by zero", fn ->
+      Money.divide(Money.new(100, :USD), 0)
+    end
+  end
+
   test "test to_string" do
     assert Money.to_string(usd(500)) == "$5.00"
     assert Money.to_string(eur(1234)) == "€12.34"
@@ -336,6 +442,55 @@ defmodule MoneyTest do
       Application.delete_env(:money, :separator)
       Application.delete_env(:money, :delimiter)
       Application.delete_env(:money, :symbol)
+    end
+  end
+
+  test "to_string configuration with custom_display_options" do
+    try do
+      # Default configuration
+      Application.put_env(:money, :separator, ",")
+      Application.put_env(:money, :delimeter, ".")
+      Application.put_env(:money, :symbol, false)
+      Application.put_env(:money, :symbol_on_right, false)
+      Application.put_env(:money, :symbol_space, false)
+      Application.put_env(:money, :fractional_unit, true)
+      Application.put_env(:money, :strip_insignificant_zeros, false)
+
+      # Custom configuration
+      Application.put_env(:money, :custom_display_options,
+        EUR: %{symbol: true, symbol_on_right: true, symbol_space: true, separator: ".", delimiter: ","},
+        JPY: %{symbol: true, symbol_on_right: true, separator: ","},
+        ARS: %{symbol: true, symbol_on_right: false, separator: ".", delimiter: ","},
+        PEN: %{symbol: true, symbol_on_right: false, symbol_space: true, separator: ",", delimiter: "."},
+        BRL: %{symbol: false, separator: ".", delimiter: ","}
+      )
+
+      # default configuration test
+      assert Money.to_string(usd(1_234_567_890)) == "12,345,678.90"
+
+      # custom configuration test
+      assert Money.to_string(eur(1_234_567_890)) == "12.345.678,90 €"
+      assert Money.to_string(jpy(1_234_567_890)) == "1,234,567,890¥"
+      assert Money.to_string(ars(1_234_567_890)) == "$12.345.678,90"
+      assert Money.to_string(pen(1_234_567_890)) == "S/ 12,345,678.90"
+      assert Money.to_string(brl(1_234_567_8900)) == "123.456.789,00"
+
+      # overwriting with options
+      assert Money.to_string(eur(1_234_567_890), symbol: false) == "12.345.678,90"
+      assert Money.to_string(jpy(1_234_567_890), symbol_space: true) == "1,234,567,890 ¥"
+      assert Money.to_string(ars(1_234_567_890), symbol_on_right: true) == "12.345.678,90$"
+      assert Money.to_string(pen(1_234_567_890), fractional_unit: false, symbol_space: false) == "S/12,345,678"
+      assert Money.to_string(brl(1_234_567_8900), symbol: true, strip_insignificant_zeros: true) == "R$123.456.789"
+    after
+      Application.delete_env(:money, :separator)
+      Application.delete_env(:money, :delimeter)
+      Application.delete_env(:money, :symbol)
+      Application.delete_env(:money, :symbol_on_right)
+      Application.delete_env(:money, :symbol_space)
+      Application.delete_env(:money, :fractional_unit)
+      Application.delete_env(:money, :strip_insignificant_zeros)
+
+      Application.delete_env(:money, :custom_display_options)
     end
   end
 

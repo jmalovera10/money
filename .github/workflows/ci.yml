@@ -1,17 +1,20 @@
-on: push
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     name: OTP ${{matrix.otp}} / Elixir ${{matrix.elixir}}
     strategy:
       matrix:
         include:
-          - otp: 25.1
-            elixir: 1.14.2
-          - otp: 21.3
-            elixir: 1.7.4
-
+          - otp: 27.0
+            elixir: 1.18.2
+          - otp: 24
+            elixir: 1.11.4
 
     steps:
       - uses: actions/checkout@v3
@@ -19,5 +22,10 @@ jobs:
         with:
           otp-version: ${{matrix.otp}}
           elixir-version: ${{matrix.elixir}}
-      - run: mix deps.get
-      - run: mix test
+      - run: BLEND=decimal_1_2 mix deps.get
+      # Run tests for decimal ~> 1.2 only
+      - run: BLEND=decimal_1_2 MIX_ENV=test mix compile --warnings-as-errors
+      - run: BLEND=decimal_1_2 mix test ./test/money_test.exs --only decimal_1_2
+      - run: BLEND=decimal_2_0 mix deps.get
+      - run: BLEND=decimal_2_0 MIX_ENV=test mix compile --warnings-as-errors
+      - run: BLEND=decimal_2_0 mix test
