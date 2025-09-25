@@ -1,6 +1,6 @@
 # Money
 
-[![Build Status](https://travis-ci.org/elixirmoney/money.svg?branch=master)](https://travis-ci.org/elixirmoney/money)
+[![CI Status](https://github.com/elixirmoney/money/actions/workflows/ci.yml/badge.svg)](https://github.com/elixirmoney/money/actions/workflows/ci.yml)
 [![Module Version](https://img.shields.io/hexpm/v/money.svg)](https://hex.pm/packages/money)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/money/)
 [![Total Download](https://img.shields.io/hexpm/dt/money.svg)](https://hex.pm/packages/money)
@@ -22,7 +22,7 @@ Add the following to your `mix.exs`:
 
 ```elixir
 def deps do
-  [{:money, "~> 1.12"}]
+  [{:money, "~> 1.14"}]
 end
 ```
 
@@ -322,6 +322,18 @@ config :money,
   custom_currencies: [
     BTC: %{name: "Bitcoin", symbol: "₿", exponent: 8},
     GCS: %{name: "Galactic Credit Standard", symbol: "gcs", exponent: 0}
+  ]
+```
+
+### Custom Currencies Display Options
+
+In some cases, we may need to display the currency in a different way than the default format. For example, we may want to display the currency symbol on the right side of the amount for some currencies. To achieve this, you can add the following configuration:
+
+```elixir
+config :money,
+  custom_display_options: [
+    EUR: %{symbol_on_right: true, symbol_space: true, separator: ".", delimiter: ",", symbol: true},
+    JPY: %{symbol_on_right: true, separator: ".", delimiter: ",", symbol: true}
   ]
 ```
 

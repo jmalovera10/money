@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.14.0 – 2025-03-10
+
+- Add support parsing scientific notation
+- Fix elixir 1.18 type warning (#239)
+
+## 1.13.1 – 2024-07-10
+
+- Fix release not including blend (which is a dev tool) (#229)
+
+## 1.13.0 – 2024-07-09
+
+- Add custom_display_options configuration (#225)
+- Update Money.parse/1 to work with decimal ~> 1.2 and ~> 2.0 (#227)
+
+## 1.12.4 – 2024-01-04
+
+- Allow phoenix_html 4.0 (#212)
+
+## 1.12.3 – 2023-08-23
+
+- Fix map_type dump typespec (#204)
+- Add SLE which is the new currency in Sierra Leone (#203)
+- Bugfix: {Currency.Type.dump/1} missing ISO string support (#201)
+
 ## 1.12.2 – 2023-01-19
 
 - Better error messages for `Money.add` and `Monet.subtract` (#191)
