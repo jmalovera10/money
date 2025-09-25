@@ -241,12 +241,22 @@ defmodule MoneyTest do
              usd(-3)
            ]
 
+    assert Money.divide(Money.new(7, :USD), -2) == [
+             usd(-4),
+             usd(-3)
+           ]
+
     assert Money.divide(Money.new(-7, :USD), -2) == [
              usd(4),
              usd(3)
            ]
 
     assert Money.divide(Money.new(-1, :USD), 2) == [
+             usd(-1),
+             usd(0)
+           ]
+
+    assert Money.divide(Money.new(1, :USD), -2) == [
              usd(-1),
              usd(0)
            ]
@@ -276,6 +286,14 @@ defmodule MoneyTest do
              usd(1),
              usd(1),
              usd(1),
+             usd(0),
+             usd(0)
+           ]
+
+    assert Money.divide(Money.new(0, :USD), -5) == [
+             usd(0),
+             usd(0),
+             usd(0),
              usd(0),
              usd(0)
            ]
